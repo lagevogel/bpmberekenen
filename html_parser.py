@@ -10,6 +10,8 @@ priceLine = '<span class="cldt-price sc-font-xl sc-font-bold" data-item-name="pr
 dataLine = '<ul data-item-name="vehicle-details">'
 transmissionLine = '<li data-type="transmission-type">'
 emissionLine = "CO2/km"
+urlLine = 'a data-item-name="detail-page-link" href='
+autoscoutUrl = "https://www.autoscout24.de"
 
 carList = []
 
@@ -19,7 +21,7 @@ class Audi:
     '''
     Initialize class with the data given
     '''
-    def __init__(self, nr, guid, price, distance, transmission, horsepower, date, emission):
+    def __init__(self, nr, guid, price, distance, transmission, horsepower, date, emission, url):
         self.nr = nr
         self.guid = guid
         self.price = price.split(" ")[1][:-2].replace(".", "")
@@ -29,6 +31,7 @@ class Audi:
         self.date = date
         self.emission = emission.split(" ")[0]
         self.bpm = self.calculateBPM(self.date, self.emission)
+        self.url = autoscoutUrl+url[:-1].replace('"', "")
 
     def __str__(self):
         return (f"Car #{self.nr} with id {self.guid} has a price of {self.price} with {self.distance} kilometers run\n This car is from {self.date}, has {self.horsepower} HP and is an {self.transmission} with {self.emission} g CO2/km")
@@ -42,7 +45,8 @@ class Audi:
                 "horsepower": self.horsepower,
                 "date": self.date,
                 "emission": self.emission,
-                "BPM": self.bpm}
+                "BPM": self.bpm,
+                "url": self.url}
 
     def calculateBPM(self, date, emission):
         try:
@@ -165,6 +169,8 @@ def getdatafrompage(text, carNumber):
             atLeastOnce = True
             carId = line.split('"')[1][3:]
             #print(f'{carId} on line {counter}')
+        if urlLine in line:
+            carUrl = line.split(urlLine)[1]
         if priceLine in line:
             carPrice = linesSplit[i+1]
         if dataLine in line:
@@ -180,7 +186,7 @@ def getdatafrompage(text, carNumber):
         if emissionLine in line:
             carEmission = line
             carNr += 1
-            carList.append(Audi(carNr, carId, carPrice, carDistance, carTransmission, carHorsePower, carDate, carEmission))
+            carList.append(Audi(carNr, carId, carPrice, carDistance, carTransmission, carHorsePower, carDate, carEmission, carUrl))
 
         # if endLine in line:
         #     carList.append(Audi(carNr, carId, carPrice, carDistance, carTransmission, carHorsePower, carDate))
@@ -199,6 +205,8 @@ with open("afschrijftabel.txt","r") as f:
         afschrijfTabel[int(newLine[0].strip())] = newLine[1]
 
 price = 26000
+carName = "Audi TT"
+#carName = "Mustang"
 for page in range(1, 100):
     link = f"https://www.autoscout24.de/lst/audi/tt?sort=standard&desc=0&ustate=N%2CU&size=20&page={page}&powerfrom=165&powertype=hp&cy=D&priceto={price}&kmto=150000&fregfrom=2014&atype=C&"
     #link = f"https://www.autoscout24.de/lst/ford/mustang?sort=standard&desc=0&ustate=N%2CU&size=20&page={page}&cy=D&fregfrom=2014&atype=C&"
@@ -217,7 +225,7 @@ jsdata = json.dumps(results)
 
 today = date.today()
 fileName = today.strftime("%d-%m-%Y")
-with open(f'jsondata_{fileName}.json', 'w') as outfile:
+with open(f'jsondata_{fileName}_{carName}.json', 'w') as outfile:
     json.dump(results, outfile)
 
 
